@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>VBA注册码生成器 - SAPRFC</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔑 SAPRFC 注册码</h1>
+            <p>为SAPRFC VBA应用程序生成和验证注册码</p>
+        </div>
+
+        <div class="info-box">
+            <strong>使用说明：</strong><br>
+            • <strong>生成注册码</strong>：生成注册码<br>
+            • <strong>验证注册码</strong>：输入注册码进行验证<br>
+            • 注册码有效期至当年12月31日
+        </div>
+
+        <div class="tab-container">
+            <button class="tab active" onclick="showTab('generate')">生成注册码</button>
+            <button class="tab" onclick="showTab('verify')">验证注册码</button>
+        </div>
+
+        <!-- 生成注册码 -->
+        <div id="generate-tab" class="tab-content active">
+            <div class="form-group">
+                <label for="machineCode">机器码：</label>
+                <textarea 
+                    id="machineCode" 
+                    placeholder="请输入从VBA应用程序获取的机器码..."
+                    required
+                ></textarea>
+            </div>
+
+            <button class="btn" onclick="generateLicense()">生成注册码</button>
+        </div>
+
+        <!-- 验证注册码 -->
+        <div id="verify-tab" class="tab-content">
+            <div class="form-group">
+                <label for="verifyLicenseCode">注册码：</label>
+                <textarea 
+                    id="verifyLicenseCode" 
+                    placeholder="请输入要验证的注册码..."
+                    required
+                ></textarea>
+            </div>
+
+            <button class="btn btn-secondary" onclick="verifyLicense()">验证注册码</button>
+        </div>
+
+        <div class="result" id="result">
+            <h3>结果：</h3>
+            <div id="resultContent"></div>
+        </div>
+
+        <div class="footer">
+            <p>© 2026 SAPRFC 注册系统 | 版权归 SAPRFC 所有 | 完全免费</p>
+        </div>
+    </div>
+
+    <script src="assets/script.js"></script>
+</body>
+</html>
