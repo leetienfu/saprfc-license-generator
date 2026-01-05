@@ -2,17 +2,17 @@
 
 // API配置
 const API_CONFIG = {
-    // Cloudflare Workers API URL地址（推荐）
+    // Cloudflare Workers API URL地址（必填）
     // 格式：'https://your-worker.your-subdomain.workers.dev'
-    BASE_URL: '', // 如果留空，则使用纯前端模式
+    BASE_URL: 'https://your-worker.workers.dev', // 请替换为您的实际API地址
     
     // Vercel备用API（可选）
     // BASE_URL: 'https://your-app.vercel.app/api',
     
     VERSION: '1.0.0',
     
-    // 部署模式：'offline' = 纯前端模式，'api' = API模式
-    MODE: 'offline' // 纯前端模式 - 无需后端API
+    // 部署模式：'api' = API模式（安全模式）
+    MODE: 'api' // API模式 - 所有逻辑在后端处理
 };
 
 // 服务器连接状态
@@ -39,96 +39,9 @@ async function checkServerConnection() {
     }
 }
 
-// 验证注册码（纯前端模式）
-function verifyLicenseOffline(licenseCode, machineCode) {
-    try {
-        // Base64解码
-        const decodedData = Base64Decode(licenseCode);
-        
-        // XOR解密
-        const decryptedData = XOREncrypt(decodedData, 'YourSecretKey2024');
-        
-        // 解析数据格式：machineCode|expiryDate
-        const parts = decryptedData.split('|');
-        
-        if (parts.length !== 2) {
-            return { success: false, error: '许可证格式无效' };
-        }
-        
-        const licenseMachineCode = parts[0];
-        const expiryDateStr = parts[1];
-        
-        // 如果提供了机器码，验证是否匹配
-        if (machineCode && licenseMachineCode !== machineCode) {
-            return { success: false, error: '机器码不匹配' };
-        }
-        
-        // 验证到期日期
-        const expiryDate = new Date(expiryDateStr + 'T23:59:59');
-        const currentDate = new Date();
-        
-        if (expiryDate < currentDate) {
-            return {
-                success: false,
-                error: '许可证已过期',
-                expiryDate: expiryDateStr,
-                currentDate: formatDate(currentDate)
-            };
-        }
-        
-        // 检查是否是当年最后一天或之前
-        const currentYear = currentDate.getFullYear();
-        const yearEnd = new Date(currentYear, 11, 31);
-        const validExpiryDate = expiryDate > yearEnd ? yearEnd : expiryDate;
-        
-        return {
-            success: true,
-            valid: true,
-            expiryDate: formatDate(validExpiryDate),
-            daysRemaining: Math.ceil((validExpiryDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)),
-            machineCode: licenseMachineCode,
-            version: API_CONFIG.VERSION,
-            verifiedAt: new Date().toISOString()
-        };
-        
-    } catch (error) {
-        return { success: false, error: '许可证解密失败，格式可能已被篡改' };
-    }
-}
+// 注意：离线验证功能已移除，所有验证都在后端API中进行
 
-// 生成注册码（纯前端模式）
-function generateLicenseOffline(machineCode) {
-    try {
-        // 机器码验证
-        const validation = validateMachineCode(machineCode);
-        if (!validation.valid) {
-            return { success: false, error: validation.message };
-        }
-        
-        // 生成到期日期（当年最后一天）
-        const currentYear = new Date().getFullYear();
-        const expiryDate = new Date(currentYear, 11, 31); // 12月31日
-        
-        // 组合数据：机器码|到期日期
-        const licenseData = `${machineCode}|${formatDate(expiryDate)}`;
-        
-        // 使用加密
-        const encryptedData = XOREncrypt(licenseData, 'YourSecretKey2024');
-        const licenseCode = Base64Encode(encryptedData);
-        
-        return {
-            success: true,
-            licenseCode: licenseCode,
-            expiryDate: formatDate(expiryDate),
-            machineCode: machineCode,
-            version: API_CONFIG.VERSION,
-            generatedAt: new Date().toISOString()
-        };
-        
-    } catch (error) {
-        return { success: false, error: '生成注册码时发生错误' };
-    }
-}
+// 注意：离线生成功能已移除，所有生成都在后端API中进行
 
 // 服务器端验证许可证
 async function verifyLicenseOnline(licenseCode, machineCode) {
@@ -185,145 +98,16 @@ async function generateLicenseOnline(machineCode) {
     }
 }
 
-// 禁用F12开发者工具和打印快捷键
-document.onkeydown = function(e) {
-    if (e.keyCode === 123 || // F12
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || // Ctrl+Shift+I/J
-        (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
-        (e.ctrlKey && e.keyCode === 80) || // Ctrl+P (打印)
-        (e.ctrlKey && e.keyCode === 83)) { // Ctrl+S (保存)
-        e.preventDefault();
-        return false;
-    }
-};
+// 注意：前端安全防护功能已移除，因为在前端无法提供真正的安全性
+// 真正的安全保护应该在后端API中实现
 
-// 禁用右键菜单
-document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    return false;
-});
+// 注意：页面保护功能已移除，前端无法提供真正的安全性
 
-// 禁用选择和拖拽
-document.addEventListener('selectstart', function(e) {
-    e.preventDefault();
-    return false;
-});
-
-document.addEventListener('dragstart', function(e) {
-    e.preventDefault();
-    return false;
-});
-
-// 监听开发者工具（增强版）
-let devtools = {open: false, orientation: null};
-let devtoolsDetected = false;
-const threshold = 160;
-const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-
-if (!(heightThreshold && widthThreshold) && 
-    ((window.Firebug && window.Firebug.chrome && window.Firebug.chrome.isInitialized) || widthThreshold || heightThreshold)) {
-    devtools.open = true;
-    devtools.orientation = widthThreshold ? 'vertical' : 'horizontal';
-    devtoolsDetected = true;
-}
-
-// 增强的反调试检测
-function detectDevTools() {
-    const start = Date.now();
-    debugger; // 这会暂停执行
-    const end = Date.now();
-    
-    if (end - start > 100) {
-        return true; // 检测到调试器
-    }
-    return false;
-}
-
-// 检查控制台API
-function checkConsoleAPI() {
-    let devtools = false;
-    if (window.console) {
-        const symbols = ['_commandLineAPI', '__commandLineAPI', '_console', 'console'];
-        symbols.forEach(symbol => {
-            if (window.console[symbol] !== undefined) {
-                devtools = true;
-            }
-        });
-    }
-    return devtools;
-}
-
-// 定期检查开发者工具状态
-setInterval(function() {
-    const consoleAPI = checkConsoleAPI();
-    const debug = detectDevTools();
-    
-    if ((window.Firebug && window.Firebug.chrome && window.Firebug.chrome.isInitialized) || 
-        widthThreshold || heightThreshold || consoleAPI || debug) {
-        
-        if (devtools.open) {
-            // 如果检测到开发者工具打开，清除控制台并显示警告
-            console.clear();
-            console.warn('%c检测到开发者工具！', 'color: red; font-size: 20px; font-weight: bold;');
-            console.warn('%c请关闭开发者工具以继续使用此软件', 'color: red; font-size: 16px;');
-            
-            // 可以进一步限制功能
-            if (++devtoolsDetected > 5) {
-                alert('检测到多次使用开发者工具，软件功能将受限。');
-            }
-        }
-        devtools.open = true;
-    } else {
-        devtools.open = false;
-        devtoolsDetected = Math.max(0, devtoolsDetected - 1);
-    }
-}, 1000);
-
-// 防止页面被修改
-function protectPage() {
-    // 防止iframe嵌套
-    if (window.top !== window.self) {
-        window.top.location = window.self.location;
-    }
-    
-    // 防止页面离开
-    window.addEventListener('beforeunload', function(e) {
-        e.preventDefault();
-        e.returnValue = '确定要离开此页面吗？';
-    });
-    
-    // 定期检查页面完整性
-    setInterval(function() {
-        const title = document.title;
-        const hasExpectedTitle = title.includes('VBA注册码生成器');
-        const hasExpectedElement = document.querySelector('.container') !== null;
-        
-        if (!hasExpectedTitle || !hasExpectedElement) {
-            console.clear();
-            console.warn('页面可能被修改！');
-            location.reload();
-        }
-    }, 5000);
-}
-
-// 增强的机器码验证
+// 基础机器码检查（完整验证在后端进行）
 function validateMachineCode(machineCode) {
-    // 基本格式检查
-    if (!machineCode || machineCode.length < 8 || machineCode.length > 64) {
-        return { valid: false, message: '机器码长度应为8-64位字符' };
-    }
-    
-    // 检查是否包含非法字符
-    const illegalChars = /[<>:"|?*\\]/;
-    if (illegalChars.test(machineCode)) {
-        return { valid: false, message: '机器码包含非法字符' };
-    }
-    
-    // 检查是否是常见的测试码
-    const testCodes = ['test', '123456', '000000', 'admin', 'demo'];
-    if (testCodes.includes(machineCode.toLowerCase())) {
-        return { valid: false, message: '不允许使用测试机器码' };
+    // 只进行基础的空值检查，完整验证在后端API中进行
+    if (!machineCode || machineCode.trim() === '') {
+        return { valid: false, message: '请输入机器码' };
     }
     
     return { valid: true };
@@ -401,19 +185,12 @@ async function generateLicense() {
         return;
     }
 
-    // 尝试在线模式
+    // 使用API模式生成注册码
     try {
-        let result;
-        
-        if (API_CONFIG.MODE === 'api' && API_CONFIG.BASE_URL) {
-            result = await generateLicenseOnline(machineCode);
-        } else {
-            result = generateLicenseOffline(machineCode);
-        }
+        const result = await generateLicenseOnline(machineCode);
         
         if (result.success) {
             showLicenseResult(result, machineCode);
-            return;
         } else {
             throw new Error(result.error || '生成失败');
         }
@@ -465,15 +242,9 @@ async function verifyLicense() {
         return;
     }
 
-    // 尝试在线验证
+    // 使用API模式验证注册码
     try {
-        let result;
-        
-        if (API_CONFIG.MODE === 'api' && API_CONFIG.BASE_URL) {
-            result = await verifyLicenseOnline(licenseCode, machineCode);
-        } else {
-            result = verifyLicenseOffline(licenseCode, machineCode);
-        }
+        const result = await verifyLicenseOnline(licenseCode, machineCode);
         
         if (result.success && result.valid) {
             showVerifyResult(result);
@@ -524,65 +295,9 @@ function validateLicenseFormat(licenseCode) {
 }
 
 // ============================================================================
-// 与VBA端完全一致的加密算法
+// 注意：所有加密解密逻辑已移至后端API处理
+// 前端不再包含任何加密解密函数，确保安全性
 // ============================================================================
-
-// XOR加密函数（与VBA端完全一致）
-function XOREncrypt(plainText, key) {
-    let result = '';
-    const keyLength = key.length;
-    
-    // VBA中的循环从1开始，这里调整为0开始但逻辑相同
-    for (let i = 0; i < plainText.length; i++) {
-        const charCode = plainText.charCodeAt(i);
-        const keyCharCode = key.charCodeAt((i) % keyLength);
-        result += String.fromCharCode(charCode ^ keyCharCode);
-    }
-    
-    return result;
-}
-
-// Base64编码函数（与VBA端完全一致）
-function Base64Encode(binaryData) {
-    // 使用与VBA相同的编码方式
-    // VBA使用MSXML2.DOMDocument进行Base64编码
-    // 这里使用标准的Base64编码，确保一致性
-    try {
-        // 将字符串转换为字节数组
-        const encoder = new TextEncoder();
-        const data = encoder.encode(binaryData);
-        
-        // 手动Base64编码，确保与VBA的MSXML2.DOMDocument结果一致
-        let binaryString = '';
-        for (let i = 0; i < data.length; i++) {
-            binaryString += String.fromCharCode(data[i]);
-        }
-        
-        return btoa(binaryString);
-    } catch (error) {
-        console.error('Base64编码错误:', error);
-        throw new Error('Base64编码失败');
-    }
-}
-
-// Base64解码函数（与VBA端完全一致）
-function Base64Decode(base64String) {
-    try {
-        // 与VBA的MSXML2.DOMDocument解码保持一致
-        const binaryString = atob(base64String);
-        const data = new Uint8Array(binaryString.length);
-        
-        for (let i = 0; i < binaryString.length; i++) {
-            data[i] = binaryString.charCodeAt(i);
-        }
-        
-        const decoder = new TextDecoder();
-        return decoder.decode(data);
-    } catch (error) {
-        console.error('Base64解码错误:', error);
-        throw new Error('Base64解码失败');
-    }
-}
 
 // ============================================================================
 // 辅助函数
@@ -598,16 +313,13 @@ function formatDate(date) {
 
 // 页面加载完成后的初始化
 document.addEventListener('DOMContentLoaded', function() {
-    // 启用页面保护
-    protectPage();
-    
     // 检查服务器连接
     setTimeout(() => {
         checkServerConnection();
     }, 1000);
     
-    console.log('SAPRFC License System 启动成功');
-    console.log('部署模式:', API_CONFIG.MODE === 'api' ? 'API模式' : '离线模式');
+    console.log('VBA注册码生成器启动成功');
+    console.log('部署模式:', API_CONFIG.MODE === 'api' ? 'API模式（安全）' : '离线模式');
     if (API_CONFIG.BASE_URL) {
         console.log('API地址:', API_CONFIG.BASE_URL);
     }
