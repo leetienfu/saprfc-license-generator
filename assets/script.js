@@ -4,7 +4,7 @@
 const API_CONFIG = {
     // Cloudflare Workers API URL地址（必填）
     // 格式：'https://your-worker.your-subdomain.workers.dev'
-    BASE_URL: 'https://your-worker.workers.dev', // 请替换为您的实际API地址
+    BASE_URL: 'https://worker-test.leetienfu.top', // 请替换为您的实际API地址
     
     // Vercel备用API（可选）
     // BASE_URL: 'https://your-app.vercel.app/api',
